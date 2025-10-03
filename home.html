@@ -1,0 +1,1711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nester AI - Premium Document Assistant</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #8b5cf6;
+            --secondary: #10b981;
+            --accent: #f59e0b;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --sidebar-bg: #1e1b4b;
+            --sidebar-text: #e0e7ff;
+            --sidebar-hover: #312e81;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border: #e5e7eb;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --gradient: linear-gradient(135deg, #6366f1, #8b5cf6);
+        }
+
+        .dark-theme {
+            --primary: #818cf8;
+            --primary-dark: #6366f1;
+            --primary-light: #a5b4fc;
+            --secondary: #34d399;
+            --accent: #fbbf24;
+            --text: #f3f4f6;
+            --text-light: #d1d5db;
+            --bg: #111827;
+            --card-bg: #1f2937;
+            --sidebar-bg: #0f172a;
+            --sidebar-text: #e2e8f0;
+            --sidebar-hover: #1e293b;
+            --success: #34d399;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --border: #374151;
+            --shadow: rgba(0, 0, 0, 0.3);
+            --gradient: linear-gradient(135deg, #818cf8, #a5b4fc);
+        }
+
+        .nature-theme {
+            --primary: #059669;
+            --primary-dark: #047857;
+            --primary-light: #10b981;
+            --secondary: #0ea5e9;
+            --accent: #f59e0b;
+            --text: #1c1917;
+            --text-light: #57534e;
+            --bg: #f0fdf4;
+            --card-bg: #ffffff;
+            --sidebar-bg: #064e3b;
+            --sidebar-text: #d1fae5;
+            --sidebar-hover: #065f46;
+            --success: #059669;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --border: #d1fae5;
+            --shadow: rgba(5, 150, 105, 0.15);
+            --gradient: linear-gradient(135deg, #059669, #0d9488);
+        }
+
+        .sunset-theme {
+            --primary: #ea580c;
+            --primary-dark: #c2410c;
+            --primary-light: #f97316;
+            --secondary: #db2777;
+            --accent: #eab308;
+            --text: #431407;
+            --text-light: #9a3412;
+            --bg: #fff7ed;
+            --card-bg: #ffffff;
+            --sidebar-bg: #7c2d12;
+            --sidebar-text: #fed7aa;
+            --sidebar-hover: #9a3412;
+            --success: #16a34a;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --border: #fdba74;
+            --shadow: rgba(234, 88, 12, 0.15);
+            --gradient: linear-gradient(135deg, #ea580c, #db2777);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Peaceful background animation */
+        .background-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .floating-shapes {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .shape {
+            position: absolute;
+            border-radius: 50%;
+            background: var(--primary);
+            opacity: 0.1;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .shape:nth-child(1) {
+            width: 80px;
+            height: 80px;
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+            background: var(--primary);
+        }
+
+        .shape:nth-child(2) {
+            width: 120px;
+            height: 120px;
+            top: 60%;
+            left: 80%;
+            animation-delay: -5s;
+            background: var(--secondary);
+        }
+
+        .shape:nth-child(3) {
+            width: 60px;
+            height: 60px;
+            top: 80%;
+            left: 20%;
+            animation-delay: -10s;
+            background: var(--accent);
+        }
+
+        .shape:nth-child(4) {
+            width: 100px;
+            height: 100px;
+            top: 30%;
+            left: 70%;
+            animation-delay: -15s;
+            background: var(--primary-light);
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) rotate(0deg);
+            }
+            33% {
+                transform: translateY(-30px) rotate(120deg);
+            }
+            66% {
+                transform: translateY(15px) rotate(240deg);
+            }
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 320px;
+            background: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            padding: 20px;
+            overflow-y: auto;
+            z-index: 100;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-header {
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 20px;
+        }
+
+        .logo-icon {
+            font-size: 24px;
+            background: var(--gradient);
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .new-chat-btn {
+            background: var(--gradient);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 14px;
+            width: 100%;
+            text-align: center;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 25px;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .new-chat-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .sidebar-section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--sidebar-text);
+            opacity: 0.7;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu-item {
+            padding: 12px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 5px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sidebar-menu-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background: var(--primary);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-menu-item:hover {
+            background: var(--sidebar-hover);
+            transform: translateX(5px);
+        }
+
+        .sidebar-menu-item:hover::before {
+            transform: scaleY(1);
+        }
+
+        .sidebar-menu-item.active {
+            background: var(--sidebar-hover);
+        }
+
+        .sidebar-menu-item.active::before {
+            transform: scaleY(1);
+        }
+
+        .chat-history-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 5px;
+        }
+
+        .chat-history-item:hover {
+            background: var(--sidebar-hover);
+        }
+
+        .chat-history-item i {
+            font-size: 14px;
+            opacity: 0.7;
+        }
+
+        .chat-title {
+            flex: 1;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-date {
+            font-size: 11px;
+            opacity: 0.6;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .user-profile:hover {
+            background: var(--sidebar-hover);
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .user-status {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            flex: 1;
+            margin-left: 320px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            transition: margin-left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        .header {
+            padding: 18px 30px;
+            background: var(--card-bg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px var(--shadow);
+            z-index: 50;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .menu-toggle {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .menu-toggle:hover {
+            background: var(--bg);
+            transform: scale(1.1);
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 700;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-btn {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 18px;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .header-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .theme-selector {
+            position: relative;
+        }
+
+        .theme-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 10px 25px var(--shadow);
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
+            width: 180px;
+            margin-top: 10px;
+            border: 1px solid var(--border);
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .theme-option {
+            padding: 12px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .theme-option:hover {
+            background: var(--bg);
+            transform: translateX(5px);
+        }
+
+        .theme-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .theme-default { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+        .theme-dark { background: linear-gradient(135deg, #1f2937, #374151); }
+        .theme-nature { background: linear-gradient(135deg, #059669, #0d9488); }
+        .theme-sunset { background: linear-gradient(135deg, #ea580c, #db2777); }
+
+        .api-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--success);
+            color: white;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Chat Container */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            background: var(--bg);
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            max-width: 75%;
+            padding: 20px 25px;
+            border-radius: 18px;
+            line-height: 1.6;
+            animation: messageSlide 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background: var(--gradient);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .ai-message {
+            align-self: flex-start;
+            background: var(--card-bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 5px;
+        }
+
+        .message-content {
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+
+        .message-ref {
+            font-size: 12px;
+            color: inherit;
+            opacity: 0.7;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .suggestion-chips {
+            display: flex;
+            gap: 12px;
+            padding: 20px 30px;
+            background: var(--card-bg);
+            flex-wrap: wrap;
+            border-top: 1px solid var(--border);
+            animation: fadeIn 0.5s ease;
+        }
+
+        .suggestion-chip {
+            padding: 12px 20px;
+            background: var(--bg);
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .suggestion-chip:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .input-area {
+            padding: 25px 30px;
+            display: flex;
+            gap: 15px;
+            background: var(--card-bg);
+            position: relative;
+            border-top: 1px solid var(--border);
+            box-shadow: 0 -2px 10px var(--shadow);
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 18px 60px 18px 25px;
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            outline: none;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            resize: none;
+            height: 60px;
+            background: var(--bg);
+            color: var(--text);
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+
+        .message-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .input-actions {
+            position: absolute;
+            right: 110px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 12px;
+        }
+
+        .input-left-actions {
+            position: absolute;
+            left: 45px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 12px;
+        }
+
+        .export-input-btn {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.3s ease;
+            padding: 8px;
+            border-radius: 8px;
+        }
+
+        .export-input-btn:hover {
+            color: var(--primary);
+            background: var(--bg);
+            transform: scale(1.1);
+        }
+
+        .send-button {
+            padding: 0 25px;
+            background: var(--gradient);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            font-size: 15px;
+        }
+
+        .send-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .send-button:active {
+            transform: translateY(0);
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 6px;
+            padding: 20px 25px;
+            background: var(--card-bg);
+            border-radius: 18px;
+            align-self: flex-start;
+            margin-bottom: 10px;
+            animation: fadeIn 0.3s ease;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+
+        .typing-dot {
+            width: 10px;
+            height: 10px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            animation: typingAnimation 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: 0s; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typingAnimation {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.6; }
+            30% { transform: translateY(-8px); opacity: 1; }
+        }
+
+        /* Export Modal */
+        .export-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            animation: modalSlide 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes modalSlide {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-light);
+            transition: all 0.3s ease;
+            padding: 5px;
+            border-radius: 6px;
+        }
+
+        .close-modal:hover {
+            color: var(--danger);
+            background: var(--bg);
+        }
+
+        .export-options {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .export-option {
+            flex: 1;
+            padding: 20px;
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .export-option:hover {
+            border-color: var(--primary);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px var(--shadow);
+        }
+
+        .export-option i {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .message {
+                max-width: 90%;
+            }
+            
+            .header-title {
+                font-size: 18px;
+            }
+            
+            .header-actions {
+                gap: 10px;
+            }
+            
+            .header-btn {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+            
+            .api-status {
+                display: none;
+            }
+            
+            .input-actions {
+                right: 90px;
+            }
+            
+            .input-left-actions {
+                left: 35px;
+            }
+        }
+
+        /* Loading Animation */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="default-theme">
+    <!-- Peaceful background animation -->
+    <div class="background-animation">
+        <div class="floating-shapes">
+            <div class="shape"></div>
+            <div class="shape"></div>
+            <div class="shape"></div>
+            <div class="shape"></div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <span>Nester AI</span>
+            </div>
+        </div>
+        
+        <button class="new-chat-btn" id="newChatBtn">
+            <i class="fas fa-plus"></i> New Chat
+        </button>
+        
+        <div class="sidebar-section">
+            <div class="section-title">Today</div>
+            <div class="sidebar-menu" id="todayChats">
+                <!-- Today's chats will be populated here -->
+            </div>
+        </div>
+        
+        <div class="sidebar-section">
+            <div class="section-title">Previous 7 Days</div>
+            <div class="sidebar-menu" id="recentChats">
+                <!-- Recent chats will be populated here -->
+            </div>
+        </div>
+        
+        <div class="sidebar-section">
+            <div class="section-title">Older Conversations</div>
+            <div class="sidebar-menu" id="olderChats">
+                <!-- Older chats will be populated here -->
+            </div>
+        </div>
+        
+        <div class="sidebar-footer">
+            <div class="user-profile">
+                <div class="user-avatar">U</div>
+                <div class="user-info">
+                    <div class="user-name" id="userName">User Account</div>
+                    <div class="user-status">Online</div>
+                </div>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+        <div class="header">
+            <div class="header-left">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="header-title">Nester AI Assistant</div>
+            </div>
+            <div class="header-actions">
+                <div class="api-status" id="apiStatus">
+                    <i class="fas fa-check-circle"></i> API Connected
+                </div>
+                <div class="theme-selector">
+                    <button class="header-btn" id="themeBtn">
+                        <i class="fas fa-palette"></i> Theme
+                    </button>
+                    <div class="theme-menu" id="themeMenu">
+                        <div class="theme-option" data-theme="default">
+                            <span class="theme-color theme-default"></span> Default
+                        </div>
+                        <div class="theme-option" data-theme="dark">
+                            <span class="theme-color theme-dark"></span> Dark
+                        </div>
+                        <div class="theme-option" data-theme="nature">
+                            <span class="theme-color theme-nature"></span> Nature
+                        </div>
+                        <div class="theme-option" data-theme="sunset">
+                            <span class="theme-color theme-sunset"></span> Sunset
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages">
+                <div class="message ai-message">
+                    <div class="message-content">
+                        Hello! I'm Nester, your premium AI assistant. I can help you with various tasks, answer questions, and provide insights. Your conversations are automatically saved to the cloud!
+                    </div>
+                    <div class="message-ref">
+                        <i class="fas fa-clock"></i> Just now
+                    </div>
+                </div>
+            </div>
+            
+            <div class="suggestion-chips">
+                <div class="suggestion-chip">How can you help me?</div>
+                <div class="suggestion-chip">What are your capabilities?</div>
+                <div class="suggestion-chip">Tell me about yourself</div>
+                <div class="suggestion-chip">Show me an example</div>
+            </div>
+            
+            <div class="input-area">
+                <div class="input-left-actions">
+                    <button class="export-input-btn" id="exportInputBtn" title="Export Conversation">
+                        <i class="fas fa-download"></i>
+                    </button>
+                </div>
+                <textarea class="message-input" id="messageInput" placeholder="Ask Nester something..." rows="1"></textarea>
+                <button class="send-button" id="sendButton">
+                    <i class="fas fa-paper-plane"></i> Send
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div class="export-modal" id="exportModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Export Conversation</h2>
+                <button class="close-modal" id="closeExportModal">&times;</button>
+            </div>
+            <p>Choose an export format for your conversation:</p>
+            <div class="export-options">
+                <div class="export-option" data-format="txt">
+                    <i class="fas fa-file-alt"></i>
+                    <div>Text File</div>
+                </div>
+                <div class="export-option" data-format="pdf">
+                    <i class="fas fa-file-pdf"></i>
+                    <div>PDF</div>
+                </div>
+                <div class="export-option" data-format="json">
+                    <i class="fas fa-file-code"></i>
+                    <div>JSON</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDpjoHXP_CyXTssdjhSYDQ88ToZkchsnmM",
+            authDomain: "nester-d1721.firebaseapp.com",
+            databaseURL: "https://nester-d1721-default-rtdb.firebaseio.com",
+            projectId: "nester-d1721",
+            storageBucket: "nester-d1721.firebasestorage.app",
+            messagingSenderId: "88432469248",
+            appId: "1:88432469248:web:057e32975b505c4aa4ffe5",
+            measurementId: "G-FL216KB02C"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const analytics = firebase.analytics();
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // API Key
+        const API_KEY = "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";
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const chatMessages = document.getElementById('chatMessages');
+            const messageInput = document.getElementById('messageInput');
+            const sendButton = document.getElementById('sendButton');
+            const themeBtn = document.getElementById('themeBtn');
+            const themeMenu = document.getElementById('themeMenu');
+            const apiStatus = document.getElementById('apiStatus');
+            const newChatBtn = document.getElementById('newChatBtn');
+            const exportInputBtn = document.getElementById('exportInputBtn');
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            const todayChats = document.getElementById('todayChats');
+            const recentChats = document.getElementById('recentChats');
+            const olderChats = document.getElementById('olderChats');
+            const exportModal = document.getElementById('exportModal');
+            const closeExportModal = document.getElementById('closeExportModal');
+            const exportOptions = document.querySelectorAll('.export-option');
+
+            // State variables
+            let currentChatId = null;
+            let user = null;
+
+            // Inappropriate content filter
+            const inappropriateTerms = [
+                'explicit', 'inappropriate', 'offensive', 'violence', 'harmful', 
+                'hate speech', 'discrimination', 'nsfw', 'adult content', 'porn',
+                'xxx', 'nude', 'naked', 'erotic', 'sex', 'sexual'
+            ];
+
+            // Initialize the application
+            async function init() {
+                await initializeFirebase();
+                testApiConnection();
+                loadChatHistory();
+                
+                // Add welcome message
+                setTimeout(() => {
+                    addMessageToChat("Your conversations are automatically saved to the cloud. You can access them anytime from the sidebar!", "ai");
+                }, 1500);
+            }
+
+            // Initialize Firebase Auth
+            async function initializeFirebase() {
+                try {
+                    // Use anonymous authentication
+                    const userCredential = await auth.signInAnonymously();
+                    user = userCredential.user;
+                    document.getElementById('userName').textContent = `User #${user.uid.substring(0, 8)}`;
+                    analytics.logEvent('app_initialized');
+                } catch (error) {
+                    console.error("Firebase auth error:", error);
+                    // Continue without auth
+                    user = { uid: 'local_user' };
+                    document.getElementById('userName').textContent = "Local User";
+                }
+            }
+
+            // Test API connection
+            async function testApiConnection() {
+                try {
+                    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                        method: "POST",
+                        headers: {
+                            "Authorization": `Bearer ${API_KEY}`,
+                            "Content-Type": "application/json",
+                            "HTTP-Referer": window.location.href,
+                            "X-Title": "Nester AI Assistant"
+                        },
+                        body: JSON.stringify({
+                            "model": "deepseek/deepseek-chat-v3.1:free",
+                            "messages": [
+                                {
+                                    "role": "system",
+                                    "content": "You are Nester, a helpful AI assistant. Respond with just 'Connected' to confirm the connection."
+                                },
+                                {
+                                    "role": "user",
+                                    "content": "Test connection"
+                                }
+                            ],
+                            "temperature": 0.1,
+                            "max_tokens": 10
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        apiStatus.innerHTML = '<i class="fas fa-check-circle"></i> API Connected';
+                        apiStatus.style.background = 'var(--success)';
+                    } else {
+                        throw new Error("API connection failed");
+                    }
+                } catch (error) {
+                    apiStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> API Limited';
+                    apiStatus.style.background = 'var(--warning)';
+                    apiStatus.style.color = 'var(--text)';
+                }
+            }
+
+            // Load chat history from Firebase
+            async function loadChatHistory() {
+                if (!user) return;
+                
+                try {
+                    const chatsRef = db.collection('chats').where('userId', '==', user.uid).orderBy('createdAt', 'desc');
+                    const snapshot = await chatsRef.get();
+                    
+                    todayChats.innerHTML = '';
+                    recentChats.innerHTML = '';
+                    olderChats.innerHTML = '';
+                    
+                    const now = new Date();
+                    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    
+                    snapshot.forEach(doc => {
+                        const chat = doc.data();
+                        const chatDate = chat.createdAt.toDate();
+                        const chatItem = createChatHistoryItem(doc.id, chat.title, chatDate);
+                        
+                        if (chatDate >= oneDayAgo) {
+                            todayChats.appendChild(chatItem);
+                        } else if (chatDate >= sevenDaysAgo) {
+                            recentChats.appendChild(chatItem);
+                        } else {
+                            olderChats.appendChild(chatItem);
+                        }
+                    });
+                } catch (error) {
+                    console.error("Error loading chat history:", error);
+                }
+            }
+
+            // Create chat history item
+            function createChatHistoryItem(chatId, title, date) {
+                const item = document.createElement('div');
+                item.className = 'chat-history-item';
+                item.innerHTML = `
+                    <i class="fas fa-comment"></i>
+                    <div class="chat-title">${title}</div>
+                    <div class="chat-date">${formatDate(date)}</div>
+                `;
+                
+                item.addEventListener('click', () => loadChat(chatId));
+                return item;
+            }
+
+            // Format date for display
+            function formatDate(date) {
+                const now = new Date();
+                const diff = now.getTime() - date.getTime();
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                
+                if (days === 0) return 'Today';
+                if (days === 1) return 'Yesterday';
+                if (days < 7) return `${days}d ago`;
+                if (days < 30) return `${Math.floor(days/7)}w ago`;
+                return date.toLocaleDateString();
+            }
+
+            // Save chat to Firebase
+            async function saveChatToFirebase(messages, title) {
+                if (!user) return null;
+                
+                try {
+                    const chatData = {
+                        userId: user.uid,
+                        title: title,
+                        messages: messages,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    
+                    if (currentChatId) {
+                        // Update existing chat
+                        await db.collection('chats').doc(currentChatId).update(chatData);
+                        return currentChatId;
+                    } else {
+                        // Create new chat
+                        const docRef = await db.collection('chats').add(chatData);
+                        currentChatId = docRef.id;
+                        loadChatHistory(); // Refresh sidebar
+                        return currentChatId;
+                    }
+                } catch (error) {
+                    console.error("Error saving chat:", error);
+                    return null;
+                }
+            }
+
+            // Load specific chat from Firebase
+            async function loadChat(chatId) {
+                try {
+                    const doc = await db.collection('chats').doc(chatId).get();
+                    if (doc.exists) {
+                        const chat = doc.data();
+                        currentChatId = chatId;
+                        
+                        // Clear current chat
+                        chatMessages.innerHTML = '';
+                        
+                        // Load messages
+                        chat.messages.forEach(msg => {
+                            addMessageToChat(msg.content, msg.role, false);
+                        });
+                        
+                        // Scroll to bottom
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    }
+                } catch (error) {
+                    console.error("Error loading chat:", error);
+                }
+            }
+
+            // Export conversation
+            function exportConversation(format) {
+                const messages = Array.from(chatMessages.children)
+                    .filter(el => el.classList.contains('message'))
+                    .map(el => ({
+                        role: el.classList.contains('user-message') ? 'user' : 'assistant',
+                        content: el.querySelector('.message-content').textContent,
+                        timestamp: el.querySelector('.message-ref').textContent
+                    }));
+                
+                let content, filename, mimeType;
+                
+                switch(format) {
+                    case 'txt':
+                        content = messages.map(msg => 
+                            `${msg.role.toUpperCase()}: ${msg.content}\n${msg.timestamp}\n\n`
+                        ).join('');
+                        filename = 'nester-conversation.txt';
+                        mimeType = 'text/plain';
+                        break;
+                    case 'pdf':
+                        // Create PDF using jsPDF
+                        createPDF(messages);
+                        return;
+                    case 'json':
+                        content = JSON.stringify({
+                            conversation: messages,
+                            exportedAt: new Date().toISOString(),
+                            app: "Nester AI"
+                        }, null, 2);
+                        filename = 'nester-conversation.json';
+                        mimeType = 'application/json';
+                        break;
+                }
+                
+                const blob = new Blob([content], { type: mimeType });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showExportSuccess(format.toUpperCase());
+            }
+
+            // Create PDF using jsPDF
+            function createPDF(messages) {
+                // Use the jsPDF library
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Set document properties
+                doc.setProperties({
+                    title: 'Nester AI Conversation',
+                    subject: 'Exported conversation from Nester AI',
+                    creator: 'Nester AI',
+                    author: 'User'
+                });
+                
+                // Add title
+                doc.setFontSize(20);
+                doc.setTextColor(40, 40, 40);
+                doc.text('Nester AI Conversation', 20, 30);
+                
+                // Add export date
+                doc.setFontSize(12);
+                doc.setTextColor(100, 100, 100);
+                doc.text(`Exported on: ${new Date().toLocaleString()}`, 20, 45);
+                
+                // Add messages
+                let yPosition = 65;
+                const lineHeight = 7;
+                const pageHeight = doc.internal.pageSize.height;
+                const margin = 20;
+                const maxWidth = 170;
+                
+                messages.forEach((msg, index) => {
+                    // Check if we need a new page
+                    if (yPosition > pageHeight - 30) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+                    
+                    // Add message header
+                    doc.setFontSize(12);
+                    doc.setTextColor(60, 60, 60);
+                    doc.text(`${msg.role.toUpperCase()} - ${msg.timestamp}`, margin, yPosition);
+                    yPosition += lineHeight;
+                    
+                    // Add message content
+                    doc.setFontSize(10);
+                    doc.setTextColor(30, 30, 30);
+                    
+                    // Split text into lines that fit within maxWidth
+                    const lines = doc.splitTextToSize(msg.content, maxWidth);
+                    doc.text(lines, margin, yPosition);
+                    yPosition += (lines.length * lineHeight) + 10;
+                    
+                    // Add separator line
+                    if (index < messages.length - 1) {
+                        doc.setDrawColor(200, 200, 200);
+                        doc.line(margin, yPosition - 5, margin + maxWidth, yPosition - 5);
+                        yPosition += 5;
+                    }
+                });
+                
+                // Save the PDF
+                doc.save('nester-conversation.pdf');
+                showExportSuccess('PDF');
+            }
+
+            // Show export success message
+            function showExportSuccess(format) {
+                const exportSuccess = document.createElement('div');
+                exportSuccess.className = 'message ai-message';
+                exportSuccess.style.background = 'var(--success)';
+                exportSuccess.style.color = 'white';
+                exportSuccess.innerHTML = `
+                    <i class="fas fa-check-circle"></i> Conversation exported as ${format} successfully!
+                `;
+                chatMessages.appendChild(exportSuccess);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                setTimeout(() => {
+                    exportSuccess.remove();
+                }, 3000);
+            }
+
+            // Event Listeners
+            themeBtn.addEventListener('click', function() {
+                themeMenu.style.display = themeMenu.style.display === 'flex' ? 'none' : 'flex';
+            });
+
+            document.querySelectorAll('.theme-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const theme = this.getAttribute('data-theme');
+                    document.body.className = theme + '-theme';
+                    themeMenu.style.display = 'none';
+                    localStorage.setItem('nester_theme', theme);
+                });
+            });
+
+            // Load saved theme
+            const savedTheme = localStorage.getItem('nester_theme');
+            if (savedTheme) {
+                document.body.className = savedTheme + '-theme';
+            }
+
+            // Close theme menu when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!themeBtn.contains(e.target) && !themeMenu.contains(e.target)) {
+                    themeMenu.style.display = 'none';
+                }
+            });
+
+            // Menu toggle for mobile
+            menuToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('collapsed');
+                mainContent.classList.toggle('expanded');
+            });
+
+            // New chat button
+            newChatBtn.addEventListener('click', function() {
+                if (chatMessages.children.length > 1 && !confirm("Start a new chat? Current conversation will be saved.")) {
+                    return;
+                }
+                currentChatId = null;
+                chatMessages.innerHTML = '';
+                addMessageToChat("Hello! I'm Nester, your premium AI assistant. How can I help you today?", "ai");
+            });
+
+            // Export button
+            exportInputBtn.addEventListener('click', function() {
+                if (chatMessages.children.length <= 1) {
+                    showSafetyWarning("There's no conversation to export yet. Start chatting first!");
+                    return;
+                }
+                exportModal.style.display = 'flex';
+            });
+
+            closeExportModal.addEventListener('click', function() {
+                exportModal.style.display = 'none';
+            });
+
+            exportOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    const format = this.getAttribute('data-format');
+                    exportConversation(format);
+                    exportModal.style.display = 'none';
+                });
+            });
+
+            window.addEventListener('click', function(e) {
+                if (e.target === exportModal) {
+                    exportModal.style.display = 'none';
+                }
+            });
+
+            // Auto-resize textarea
+            messageInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+
+            // Send message
+            sendButton.addEventListener('click', handleSendMessage);
+            messageInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                }
+            });
+
+            // Suggestion chips
+            document.querySelectorAll('.suggestion-chip').forEach(chip => {
+                chip.addEventListener('click', function() {
+                    messageInput.value = this.textContent;
+                    messageInput.focus();
+                    messageInput.dispatchEvent(new Event('input', { bubbles: true }));
+                });
+            });
+
+            // Handle sending messages
+            async function handleSendMessage() {
+                const message = messageInput.value.trim();
+                if (message) {
+                    // Check for inappropriate content
+                    if (containsInappropriateContent(message)) {
+                        showSafetyWarning("Your message contains terms that may be inappropriate. Please rephrase your question.");
+                        return;
+                    }
+                    
+                    // Add user message to chat
+                    addMessageToChat(message, 'user');
+                    messageInput.value = '';
+                    messageInput.style.height = 'auto';
+                    
+                    // Show typing indicator
+                    showTypingIndicator();
+                    
+                    try {
+                        // Get all messages for context
+                        const messages = Array.from(chatMessages.children)
+                            .filter(el => el.classList.contains('message'))
+                            .map(el => ({
+                                role: el.classList.contains('user-message') ? 'user' : 'assistant',
+                                content: el.querySelector('.message-content').textContent
+                            }));
+                        
+                        // Prepare API messages
+                        const apiMessages = [
+                            {
+                                "role": "system",
+                                "content": "You are Nester, a helpful AI assistant that provides accurate, helpful, and appropriate responses. Filter out any inappropriate requests. Keep responses concise but informative."
+                            },
+                            ...messages.map(msg => ({
+                                role: msg.role,
+                                content: msg.content
+                            }))
+                        ];
+                        
+                        // Call API
+                        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                            method: "POST",
+                            headers: {
+                                "Authorization": `Bearer ${API_KEY}`,
+                                "Content-Type": "application/json",
+                                "HTTP-Referer": window.location.href,
+                                "X-Title": "Nester AI Assistant"
+                            },
+                            body: JSON.stringify({
+                                "model": "deepseek/deepseek-chat-v3.1:free",
+                                "messages": apiMessages,
+                                "temperature": 0.7,
+                                "max_tokens": 1000
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            const aiResponse = data.choices[0].message.content;
+                            
+                            removeTypingIndicator();
+                            addMessageToChat(aiResponse, 'ai');
+                            
+                            // Save to Firebase
+                            const chatTitle = messages.length > 0 ? messages[0].content.substring(0, 50) + '...' : 'New Chat';
+                            await saveChatToFirebase([...messages, {role: 'user', content: message}, {role: 'assistant', content: aiResponse}], chatTitle);
+                            
+                        } else {
+                            throw new Error("API request failed");
+                        }
+                    } catch (error) {
+                        removeTypingIndicator();
+                        const aiResponse = generateSimulatedResponse(message);
+                        addMessageToChat(aiResponse, 'ai');
+                    }
+                }
+            }
+
+            // Utility functions
+            function containsInappropriateContent(text) {
+                const lowerText = text.toLowerCase();
+                return inappropriateTerms.some(term => lowerText.includes(term));
+            }
+
+            function showSafetyWarning(message) {
+                const warningElement = document.createElement('div');
+                warningElement.className = 'message ai-message safety-warning';
+                warningElement.style.background = 'var(--danger)';
+                warningElement.style.color = 'white';
+                warningElement.innerHTML = `
+                    <i class="fas fa-exclamation-triangle"></i> ${message}
+                `;
+                chatMessages.appendChild(warningElement);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                setTimeout(() => {
+                    warningElement.remove();
+                }, 5000);
+            }
+
+            function addMessageToChat(message, sender, animate = true) {
+                const messageElement = document.createElement('div');
+                messageElement.className = `message ${sender}-message`;
+                if (!animate) {
+                    messageElement.style.animation = 'none';
+                }
+                
+                let messageHTML = `<div class="message-content">${message}</div>`;
+                messageHTML += `<div class="message-ref"><i class="fas fa-clock"></i> ${new Date().toLocaleTimeString()}</div>`;
+                
+                messageElement.innerHTML = messageHTML;
+                chatMessages.appendChild(messageElement);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            function showTypingIndicator() {
+                const typingIndicator = document.createElement('div');
+                typingIndicator.className = 'typing-indicator';
+                typingIndicator.id = 'typingIndicator';
+                typingIndicator.innerHTML = `
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                `;
+                chatMessages.appendChild(typingIndicator);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            function removeTypingIndicator() {
+                const typingIndicator = document.getElementById('typingIndicator');
+                if (typingIndicator) {
+                    typingIndicator.remove();
+                }
+            }
+
+            function generateSimulatedResponse(userMessage) {
+                const lowerCaseMessage = userMessage.toLowerCase();
+                
+                if (containsInappropriateContent(userMessage)) {
+                    return "I'm sorry, but I can't assist with that request. I'm designed to provide helpful and appropriate information while maintaining a safe environment.";
+                }
+                
+                if (lowerCaseMessage.includes('hello') || lowerCaseMessage.includes('hi')) {
+                    return "Hello! I'm Nester, your premium AI assistant. I can help you answer questions, provide insights, and assist with various tasks. Your conversations are automatically saved!";
+                }
+                else if (lowerCaseMessage.includes('help') || lowerCaseMessage.includes('what can you do')) {
+                    return "I'm Nester, a premium AI assistant. Here's what I can do:\n\n• Answer questions on a wide range of topics\n• Provide insights and explanations\n• Help you understand complex concepts\n• Maintain conversation history in the cloud\n\nTry asking me a question!";
+                }
+                else {
+                    return "I'd be happy to help with that! Feel free to ask me any questions or request assistance with tasks you need help with.";
+                }
+            }
+
+            // Initialize the application
+            init();
+        });
+    </script>
+</body>
+</html>
