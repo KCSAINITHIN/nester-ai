@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nester AI | Login & Signup</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-analytics-compat.js"></script>
     <style>
         * {
             margin: 0;
@@ -445,6 +449,30 @@
             cursor: pointer;
         }
 
+        .verification-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .verification-modal-content {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
         @media (max-width: 480px) {
             .container {
                 max-width: 100%;
@@ -623,7 +651,36 @@
         </div>
     </div>
 
+    <!-- Verification Code Modal -->
+    <div class="verification-modal" id="verificationModal">
+        <div class="verification-modal-content">
+            <button class="close-modal" id="closeVerificationModal">&times;</button>
+            <h3>Enter Verification Code</h3>
+            <div class="form-group">
+                <input type="text" id="verificationCode" placeholder="Enter 6-digit code" required>
+                <div class="error-text" id="verificationError" style="text-align: center;"></div>
+            </div>
+            <button class="verify-btn" id="verifyCode">Verify Code</button>
+        </div>
+    </div>
+
     <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDpjoHXP_CyXTssdjhSYDQ88ToZkchsnmM",
+            authDomain: "nester-d1721.firebaseapp.com",
+            projectId: "nester-d1721",
+            storageBucket: "nester-d1721.firebasestorage.app",
+            messagingSenderId: "88432469248",
+            appId: "1:88432469248:web:057e32975b505c4aa4ffe5",
+            measurementId: "G-FL216KB02C"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const analytics = firebase.analytics();
+
         // DOM Elements
         const loginBtn = document.getElementById('loginBtn');
         const signupBtn = document.getElementById('signupBtn');
@@ -652,6 +709,11 @@
         const countryCode = document.getElementById('countryCode');
         const phoneNumber = document.getElementById('phoneNumber');
         const phoneError = document.getElementById('phoneError');
+        const verificationModal = document.getElementById('verificationModal');
+        const closeVerificationModal = document.getElementById('closeVerificationModal');
+        const verificationCode = document.getElementById('verificationCode');
+        const verifyCode = document.getElementById('verifyCode');
+        const verificationError = document.getElementById('verificationError');
 
         // Input elements
         const loginEmail = document.getElementById('loginEmail');
@@ -671,9 +733,22 @@
         const signupPasswordError = document.getElementById('signupPasswordError');
         const signupConfirmPasswordError = document.getElementById('signupConfirmPasswordError');
 
-        // User data storage (simulating a database)
-        let users = JSON.parse(localStorage.getItem('nesterUsers')) || [];
-        let currentUser = null;
+        let confirmationResult = null;
+
+        // Check if user is already logged in
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                showUserInfo(user);
+                showSuccess('Welcome back! You are now logged in.');
+                
+                // Log analytics event
+                analytics.logEvent('user_login', {
+                    method: user.providerData[0].providerId
+                });
+            } else {
+                hideUserInfo();
+            }
+        });
 
         // Toggle between login and signup forms
         loginBtn.addEventListener('click', () => {
@@ -769,21 +844,42 @@
             }
             
             if (isValid) {
-                // Check if user exists
-                const user = users.find(u => u.email === loginEmail.value && u.password === loginPassword.value);
+                const submitBtn = loginForm.querySelector('.continue-btn');
+                const originalText = submitBtn.textContent;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+                submitBtn.disabled = true;
                 
-                if (user) {
-                    currentUser = user;
-                    showUserInfo(user);
-                    showSuccess('Login successful! Welcome back.');
-                    
-                    // Simulate redirect after successful login
-                    setTimeout(() => {
-                        showSuccess('Redirecting to dashboard...');
-                    }, 1500);
-                } else {
-                    showError('Invalid email or password. Please try again.');
-                }
+                // Firebase email login
+                auth.signInWithEmailAndPassword(loginEmail.value, loginPassword.value)
+                    .then((userCredential) => {
+                        const user = userCredential.user;
+                        showSuccess('Login successful! Welcome back.');
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.disabled = false;
+                        
+                        // Log analytics event
+                        analytics.logEvent('email_login_success');
+                    })
+                    .catch((error) => {
+                        let errorMessage = 'Login failed. Please try again.';
+                        
+                        if (error.code === 'auth/user-not-found') {
+                            errorMessage = 'No account found with this email. Please sign up first.';
+                        } else if (error.code === 'auth/wrong-password') {
+                            errorMessage = 'Incorrect password. Please try again.';
+                        } else if (error.code === 'auth/invalid-email') {
+                            errorMessage = 'Invalid email address.';
+                        }
+                        
+                        showError(errorMessage);
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.disabled = false;
+                        
+                        // Log analytics event
+                        analytics.logEvent('email_login_failed', {
+                            error_code: error.code
+                        });
+                    });
             }
         });
 
@@ -807,9 +903,6 @@
             } else if (!validateEmail(signupEmail.value)) {
                 showInputError(signupEmail, signupEmailError, 'Please enter a valid email address');
                 isValid = false;
-            } else if (users.find(u => u.email === signupEmail.value)) {
-                showInputError(signupEmail, signupEmailError, 'Email is already registered');
-                isValid = false;
             }
             
             // Validate password
@@ -831,75 +924,116 @@
             }
             
             if (isValid) {
-                // Create new user
-                const newUser = {
-                    id: Date.now().toString(),
-                    name: signupName.value.trim(),
-                    email: signupEmail.value,
-                    password: signupPassword.value,
-                    createdAt: new Date().toISOString()
-                };
+                const submitBtn = signupForm.querySelector('.continue-btn');
+                const originalText = submitBtn.textContent;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating account...';
+                submitBtn.disabled = true;
                 
-                users.push(newUser);
-                localStorage.setItem('nesterUsers', JSON.stringify(users));
-                
-                currentUser = newUser;
-                showUserInfo(newUser);
-                showSuccess('Account created successfully! Welcome to Nester AI.');
-                
-                // Reset form
-                signupForm.reset();
-                
-                // Simulate redirect after successful signup
-                setTimeout(() => {
-                    showSuccess('Redirecting to dashboard...');
-                }, 1500);
+                // Firebase email signup
+                auth.createUserWithEmailAndPassword(signupEmail.value, signupPassword.value)
+                    .then((userCredential) => {
+                        const user = userCredential.user;
+                        
+                        // Update user profile with name
+                        return user.updateProfile({
+                            displayName: signupName.value.trim()
+                        }).then(() => {
+                            showSuccess('Account created successfully! Welcome to Nester AI.');
+                            submitBtn.innerHTML = originalText;
+                            submitBtn.disabled = false;
+                            
+                            // Reset form
+                            signupForm.reset();
+                            
+                            // Log analytics event
+                            analytics.logEvent('email_signup_success');
+                        });
+                    })
+                    .catch((error) => {
+                        let errorMessage = 'Sign up failed. Please try again.';
+                        
+                        if (error.code === 'auth/email-already-in-use') {
+                            errorMessage = 'Email already registered. Please log in instead.';
+                        } else if (error.code === 'auth/weak-password') {
+                            errorMessage = 'Password is too weak. Please use a stronger password.';
+                        } else if (error.code === 'auth/invalid-email') {
+                            errorMessage = 'Invalid email address.';
+                        }
+                        
+                        showError(errorMessage);
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.disabled = false;
+                        
+                        // Log analytics event
+                        analytics.logEvent('email_signup_failed', {
+                            error_code: error.code
+                        });
+                    });
             }
         });
 
-        // Social login (simulated)
+        // Google Authentication
         googleLogin.addEventListener('click', () => {
-            simulateSocialLogin(googleLogin, 'Google');
+            loginWithGoogle(googleLogin);
         });
 
         googleSignup.addEventListener('click', () => {
-            simulateSocialLogin(googleSignup, 'Google');
+            loginWithGoogle(googleSignup);
         });
 
+        function loginWithGoogle(button) {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            const loadingIcon = button.querySelector('.loading');
+            loadingIcon.style.display = 'inline-block';
+            button.disabled = true;
+            
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    showSuccess('Google authentication successful!');
+                    
+                    // Log analytics event
+                    analytics.logEvent('google_login_success');
+                })
+                .catch((error) => {
+                    let errorMessage = 'Google authentication failed. Please try again.';
+                    
+                    if (error.code === 'auth/unauthorized-domain') {
+                        errorMessage = 'Domain not authorized. Please add your domain to Firebase authorized domains.';
+                    } else if (error.code === 'auth/popup-closed-by-user') {
+                        errorMessage = 'Authentication cancelled.';
+                    }
+                    
+                    showError(errorMessage);
+                    loadingIcon.style.display = 'none';
+                    button.disabled = false;
+                    
+                    // Log analytics event
+                    analytics.logEvent('google_login_failed', {
+                        error_code: error.code
+                    });
+                });
+        }
+
+        // Apple Authentication (Simulated - would require proper configuration)
         appleLogin.addEventListener('click', () => {
-            simulateSocialLogin(appleLogin, 'Apple');
+            simulateAppleLogin(appleLogin);
         });
 
         appleSignup.addEventListener('click', () => {
-            simulateSocialLogin(appleSignup, 'Apple');
+            simulateAppleLogin(appleSignup);
         });
 
-        function simulateSocialLogin(button, provider) {
+        function simulateAppleLogin(button) {
             const loadingIcon = button.querySelector('.loading');
             loadingIcon.style.display = 'inline-block';
             button.disabled = true;
             
             setTimeout(() => {
-                // Create a mock user for social login
-                const socialUser = {
-                    id: Date.now().toString(),
-                    name: `${provider} User`,
-                    email: `user@${provider.toLowerCase()}.com`,
-                    isSocial: true,
-                    provider: provider
-                };
-                
-                currentUser = socialUser;
-                showUserInfo(socialUser);
-                showSuccess(`${provider} authentication successful!`);
-                
+                showError('Apple Sign In requires additional configuration in Firebase.');
                 loadingIcon.style.display = 'none';
                 button.disabled = false;
-                
-                // Simulate redirect
-                setTimeout(() => {
-                    showSuccess('Redirecting to dashboard...');
-                }, 1500);
             }, 2000);
         }
 
@@ -937,33 +1071,93 @@
                 return;
             }
             
-            // Simulate sending verification code
+            // Configure reCAPTCHA verifier
+            const appVerifier = new firebase.auth.RecaptchaVerifier('sendVerification', {
+                size: 'invisible'
+            });
+            
             const loadingIcon = sendVerification.querySelector('.loading');
-            if (loadingIcon) {
+            if (!loadingIcon) {
+                sendVerification.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+            } else {
                 loadingIcon.style.display = 'inline-block';
             }
             sendVerification.disabled = true;
-            sendVerification.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
             
-            setTimeout(() => {
-                phoneModal.style.display = 'none';
-                showSuccess(`Verification code sent to ${fullPhoneNumber}`);
-                
-                // Create a mock user for phone login
-                const phoneUser = {
-                    id: Date.now().toString(),
-                    name: 'Phone User',
-                    email: `user${phoneNumber.value}@phone.com`,
-                    phone: fullPhoneNumber,
-                    isPhone: true
-                };
-                
-                currentUser = phoneUser;
-                showUserInfo(phoneUser);
-                
-                sendVerification.disabled = false;
-                sendVerification.innerHTML = 'Send Verification Code';
-            }, 2000);
+            // Send verification code
+            auth.signInWithPhoneNumber(fullPhoneNumber, appVerifier)
+                .then((result) => {
+                    confirmationResult = result;
+                    phoneModal.style.display = 'none';
+                    verificationModal.style.display = 'flex';
+                    showSuccess(`Verification code sent to ${fullPhoneNumber}`);
+                    
+                    // Log analytics event
+                    analytics.logEvent('phone_verification_sent');
+                })
+                .catch((error) => {
+                    let errorMessage = 'Error sending verification code. Please try again.';
+                    
+                    if (error.code === 'auth/invalid-phone-number') {
+                        errorMessage = 'Invalid phone number format.';
+                    } else if (error.code === 'auth/quota-exceeded') {
+                        errorMessage = 'Quota exceeded. Please try again later.';
+                    }
+                    
+                    showError(errorMessage);
+                    sendVerification.disabled = false;
+                    sendVerification.innerHTML = 'Send Verification Code';
+                    
+                    // Log analytics event
+                    analytics.logEvent('phone_verification_failed', {
+                        error_code: error.code
+                    });
+                });
+        });
+
+        // Verify phone code
+        closeVerificationModal.addEventListener('click', () => {
+            verificationModal.style.display = 'none';
+        });
+
+        verifyCode.addEventListener('click', () => {
+            const code = verificationCode.value;
+            
+            if (!code) {
+                verificationError.textContent = 'Please enter the verification code';
+                verificationError.style.display = 'block';
+                return;
+            }
+            
+            verifyCode.disabled = true;
+            verifyCode.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+            
+            confirmationResult.confirm(code)
+                .then((result) => {
+                    const user = result.user;
+                    verificationModal.style.display = 'none';
+                    showSuccess('Phone verification successful!');
+                    
+                    // Log analytics event
+                    analytics.logEvent('phone_verification_success');
+                })
+                .catch((error) => {
+                    let errorMessage = 'Invalid verification code. Please try again.';
+                    
+                    if (error.code === 'auth/invalid-verification-code') {
+                        errorMessage = 'Invalid code. Please check and try again.';
+                    }
+                    
+                    verificationError.textContent = errorMessage;
+                    verificationError.style.display = 'block';
+                    verifyCode.disabled = false;
+                    verifyCode.innerHTML = 'Verify Code';
+                    
+                    // Log analytics event
+                    analytics.logEvent('phone_verification_failed', {
+                        error_code: error.code
+                    });
+                });
         });
 
         // Forgot Password
@@ -981,14 +1175,27 @@
                 return;
             }
             
-            // Check if email exists
-            const userExists = users.find(u => u.email === email);
-            
-            if (userExists) {
-                showSuccess('Password reset email sent! Check your inbox.');
-            } else {
-                showError('No account found with this email address.');
-            }
+            auth.sendPasswordResetEmail(email)
+                .then(() => {
+                    showSuccess('Password reset email sent! Check your inbox.');
+                    
+                    // Log analytics event
+                    analytics.logEvent('password_reset_requested');
+                })
+                .catch((error) => {
+                    let errorMessage = 'Error sending reset email. Please try again.';
+                    
+                    if (error.code === 'auth/user-not-found') {
+                        errorMessage = 'No account found with this email address.';
+                    }
+                    
+                    showError(errorMessage);
+                    
+                    // Log analytics event
+                    analytics.logEvent('password_reset_failed', {
+                        error_code: error.code
+                    });
+                });
         });
 
         // Terms and Privacy
@@ -1004,9 +1211,17 @@
 
         // Logout
         logoutBtn.addEventListener('click', () => {
-            currentUser = null;
-            showSuccess('You have been logged out successfully.');
-            hideUserInfo();
+            auth.signOut()
+                .then(() => {
+                    showSuccess('You have been logged out successfully.');
+                    hideUserInfo();
+                    
+                    // Log analytics event
+                    analytics.logEvent('user_logout');
+                })
+                .catch((error) => {
+                    showError(error.message);
+                });
         });
 
         // Show user info
@@ -1015,13 +1230,19 @@
             loginForm.style.display = 'none';
             signupForm.style.display = 'none';
             
-            // Generate a placeholder avatar based on name
-            const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
-            userPhoto.src = `https://ui-avatars.com/api/?name=${initials}&background=ff8a00&color=fff&size=60`;
-            userPhoto.style.display = 'block';
+            if (user.photoURL) {
+                userPhoto.src = user.photoURL;
+                userPhoto.style.display = 'block';
+            } else {
+                // Generate a placeholder avatar based on name or email
+                const name = user.displayName || user.email.split('@')[0];
+                const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
+                userPhoto.src = `https://ui-avatars.com/api/?name=${initials}&background=ff8a00&color=fff&size=60`;
+                userPhoto.style.display = 'block';
+            }
             
-            userName.textContent = `Welcome, ${user.name}!`;
-            userEmail.textContent = user.email || user.phone || '';
+            userName.textContent = `Welcome, ${user.displayName || 'User'}!`;
+            userEmail.textContent = user.email || user.phoneNumber || '';
         }
 
         function hideUserInfo() {
@@ -1072,8 +1293,6 @@
         signupEmail.addEventListener('input', () => {
             if (signupEmail.value && !validateEmail(signupEmail.value)) {
                 showInputError(signupEmail, signupEmailError, 'Please enter a valid email address');
-            } else if (signupEmail.value && users.find(u => u.email === signupEmail.value)) {
-                showInputError(signupEmail, signupEmailError, 'Email is already registered');
             } else {
                 hideInputError(signupEmail, signupEmailError);
             }
