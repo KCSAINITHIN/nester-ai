@@ -369,6 +369,7 @@
             border-radius: 10px;
             cursor: pointer;
             transition: all 0.3s ease;
+            margin-bottom: 15px;
         }
 
         .user-profile:hover {
@@ -400,6 +401,31 @@
         .user-status {
             font-size: 12px;
             opacity: 0.7;
+        }
+
+        .logout-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 20px;
+            width: 100%;
+            text-align: center;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .logout-btn:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
         }
 
         /* Main Content Styles */
@@ -992,6 +1018,9 @@
                 </div>
                 <i class="fas fa-chevron-down"></i>
             </div>
+            <button class="logout-btn" id="logoutBtn">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
         </div>
     </div>
     
@@ -1129,6 +1158,7 @@
             const exportModal = document.getElementById('exportModal');
             const closeExportModal = document.getElementById('closeExportModal');
             const exportOptions = document.querySelectorAll('.export-option');
+            const logoutBtn = document.getElementById('logoutBtn');
 
             // State variables
             let currentChatId = null;
@@ -1456,6 +1486,37 @@
                 }, 3000);
             }
 
+            // Logout function
+            function handleLogout() {
+                if (confirm("Are you sure you want to logout?")) {
+                    // Clear local storage
+                    localStorage.removeItem('nester_theme');
+                    
+                    // Sign out from Firebase
+                    auth.signOut().then(() => {
+                        // Show logout message
+                        const logoutMessage = document.createElement('div');
+                        logoutMessage.className = 'message ai-message';
+                        logoutMessage.style.background = 'var(--danger)';
+                        logoutMessage.style.color = 'white';
+                        logoutMessage.innerHTML = `
+                            <i class="fas fa-sign-out-alt"></i> You have been logged out. Page will refresh in 3 seconds.
+                        `;
+                        chatMessages.appendChild(logoutMessage);
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                        
+                        // Refresh page after 3 seconds
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 3000);
+                    }).catch((error) => {
+                        console.error("Logout error:", error);
+                        // Still refresh the page
+                        window.location.reload();
+                    });
+                }
+            }
+
             // Event Listeners
             themeBtn.addEventListener('click', function() {
                 themeMenu.style.display = themeMenu.style.display === 'flex' ? 'none' : 'flex';
@@ -1525,6 +1586,9 @@
                     exportModal.style.display = 'none';
                 }
             });
+
+            // Logout button
+            logoutBtn.addEventListener('click', handleLogout);
 
             // Auto-resize textarea
             messageInput.addEventListener('input', function() {
