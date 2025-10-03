@@ -5,10 +5,53 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nester AI | Login & Signup</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-analytics-compat.js"></script>
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword, 
+            signInWithEmailAndPassword,
+            signOut,
+            updateProfile,
+            sendPasswordResetEmail,
+            GoogleAuthProvider,
+            signInWithPopup
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDpjoHXP_CyXTssdjhSYDQ88ToZkchsnmM",
+            authDomain: "nester-d1721.firebaseapp.com",
+            databaseURL: "https://nester-d1721-default-rtdb.firebaseio.com",
+            projectId: "nester-d1721",
+            storageBucket: "nester-d1721.firebasestorage.app",
+            messagingSenderId: "88432469248",
+            appId: "1:88432469248:web:057e32975b505c4aa4ffe5",
+            measurementId: "G-FL216KB02C"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const auth = getAuth(app);
+        
+        // Make auth available globally
+        window.firebaseAuth = auth;
+        window.firebaseAuthMethods = {
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            signOut,
+            updateProfile,
+            sendPasswordResetEmail,
+            GoogleAuthProvider,
+            signInWithPopup
+        };
+    </script>
+    
     <style>
         * {
             margin: 0;
@@ -473,6 +516,15 @@
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
+        .logout-btn {
+            background: linear-gradient(135deg, #b21f1f, #8b0000) !important;
+            box-shadow: 0 0 15px rgba(178, 31, 31, 0.5) !important;
+        }
+
+        .logout-btn:hover {
+            box-shadow: 0 5px 20px rgba(178, 31, 31, 0.7) !important;
+        }
+
         @media (max-width: 480px) {
             .container {
                 max-width: 100%;
@@ -510,7 +562,7 @@
                 <img id="userPhoto" src="" alt="User Photo">
                 <h3 id="userName">Welcome!</h3>
                 <p id="userEmail"></p>
-                <button id="logoutBtn" class="continue-btn" style="margin-top: 10px; background: #666;">
+                <button id="logoutBtn" class="continue-btn logout-btn" style="margin-top: 10px;">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
             </div>
@@ -665,664 +717,589 @@
     </div>
 
     <script>
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyDpjoHXP_CyXTssdjhSYDQ88ToZkchsnmM",
-            authDomain: "nester-d1721.firebaseapp.com",
-            projectId: "nester-d1721",
-            storageBucket: "nester-d1721.firebasestorage.app",
-            messagingSenderId: "88432469248",
-            appId: "1:88432469248:web:057e32975b505c4aa4ffe5",
-            measurementId: "G-FL216KB02C"
-        };
+        // Wait for Firebase to load
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const loginBtn = document.getElementById('loginBtn');
+            const signupBtn = document.getElementById('signupBtn');
+            const toggleBg = document.getElementById('toggleBg');
+            const loginForm = document.getElementById('loginForm');
+            const signupForm = document.getElementById('signupForm');
+            const successMessage = document.getElementById('successMessage');
+            const errorMessage = document.getElementById('errorMessage');
+            const userInfo = document.getElementById('userInfo');
+            const userPhoto = document.getElementById('userPhoto');
+            const userName = document.getElementById('userName');
+            const userEmail = document.getElementById('userEmail');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const googleLogin = document.getElementById('googleLogin');
+            const appleLogin = document.getElementById('appleLogin');
+            const phoneLogin = document.getElementById('phoneLogin');
+            const googleSignup = document.getElementById('googleSignup');
+            const appleSignup = document.getElementById('appleSignup');
+            const phoneSignup = document.getElementById('phoneSignup');
+            const forgotPassword = document.getElementById('forgotPassword');
+            const termsLink = document.getElementById('termsLink');
+            const privacyLink = document.getElementById('privacyLink');
+            const phoneModal = document.getElementById('phoneModal');
+            const closeModal = document.getElementById('closeModal');
+            const sendVerification = document.getElementById('sendVerification');
+            const countryCode = document.getElementById('countryCode');
+            const phoneNumber = document.getElementById('phoneNumber');
+            const phoneError = document.getElementById('phoneError');
+            const verificationModal = document.getElementById('verificationModal');
+            const closeVerificationModal = document.getElementById('closeVerificationModal');
+            const verificationCode = document.getElementById('verificationCode');
+            const verifyCode = document.getElementById('verifyCode');
+            const verificationError = document.getElementById('verificationError');
 
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const analytics = firebase.analytics();
+            // Input elements
+            const loginEmail = document.getElementById('loginEmail');
+            const loginPassword = document.getElementById('loginPassword');
+            const loginPasswordToggle = document.getElementById('loginPasswordToggle');
+            const signupName = document.getElementById('signupName');
+            const signupEmail = document.getElementById('signupEmail');
+            const signupPassword = document.getElementById('signupPassword');
+            const signupPasswordToggle = document.getElementById('signupPasswordToggle');
+            const signupConfirmPassword = document.getElementById('signupConfirmPassword');
 
-        // DOM Elements
-        const loginBtn = document.getElementById('loginBtn');
-        const signupBtn = document.getElementById('signupBtn');
-        const toggleBg = document.getElementById('toggleBg');
-        const loginForm = document.getElementById('loginForm');
-        const signupForm = document.getElementById('signupForm');
-        const successMessage = document.getElementById('successMessage');
-        const errorMessage = document.getElementById('errorMessage');
-        const userInfo = document.getElementById('userInfo');
-        const userPhoto = document.getElementById('userPhoto');
-        const userName = document.getElementById('userName');
-        const userEmail = document.getElementById('userEmail');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const googleLogin = document.getElementById('googleLogin');
-        const appleLogin = document.getElementById('appleLogin');
-        const phoneLogin = document.getElementById('phoneLogin');
-        const googleSignup = document.getElementById('googleSignup');
-        const appleSignup = document.getElementById('appleSignup');
-        const phoneSignup = document.getElementById('phoneSignup');
-        const forgotPassword = document.getElementById('forgotPassword');
-        const termsLink = document.getElementById('termsLink');
-        const privacyLink = document.getElementById('privacyLink');
-        const phoneModal = document.getElementById('phoneModal');
-        const closeModal = document.getElementById('closeModal');
-        const sendVerification = document.getElementById('sendVerification');
-        const countryCode = document.getElementById('countryCode');
-        const phoneNumber = document.getElementById('phoneNumber');
-        const phoneError = document.getElementById('phoneError');
-        const verificationModal = document.getElementById('verificationModal');
-        const closeVerificationModal = document.getElementById('closeVerificationModal');
-        const verificationCode = document.getElementById('verificationCode');
-        const verifyCode = document.getElementById('verifyCode');
-        const verificationError = document.getElementById('verificationError');
+            // Error elements
+            const loginEmailError = document.getElementById('loginEmailError');
+            const loginPasswordError = document.getElementById('loginPasswordError');
+            const signupNameError = document.getElementById('signupNameError');
+            const signupEmailError = document.getElementById('signupEmailError');
+            const signupPasswordError = document.getElementById('signupPasswordError');
+            const signupConfirmPasswordError = document.getElementById('signupConfirmPasswordError');
 
-        // Input elements
-        const loginEmail = document.getElementById('loginEmail');
-        const loginPassword = document.getElementById('loginPassword');
-        const loginPasswordToggle = document.getElementById('loginPasswordToggle');
-        const signupName = document.getElementById('signupName');
-        const signupEmail = document.getElementById('signupEmail');
-        const signupPassword = document.getElementById('signupPassword');
-        const signupPasswordToggle = document.getElementById('signupPasswordToggle');
-        const signupConfirmPassword = document.getElementById('signupConfirmPassword');
+            let confirmationResult = null;
 
-        // Error elements
-        const loginEmailError = document.getElementById('loginEmailError');
-        const loginPasswordError = document.getElementById('loginPasswordError');
-        const signupNameError = document.getElementById('signupNameError');
-        const signupEmailError = document.getElementById('signupEmailError');
-        const signupPasswordError = document.getElementById('signupPasswordError');
-        const signupConfirmPasswordError = document.getElementById('signupConfirmPasswordError');
-
-        let confirmationResult = null;
-
-        // Check if user is already logged in
-        auth.onAuthStateChanged((user) => {
-            if (user) {
-                showUserInfo(user);
-                showSuccess('Welcome back! You are now logged in.');
-                
-                // Log analytics event
-                analytics.logEvent('user_login', {
-                    method: user.providerData[0].providerId
+            // Check if user is already logged in
+            if (window.firebaseAuth) {
+                window.firebaseAuth.onAuthStateChanged((user) => {
+                    if (user) {
+                        // User is signed in, redirect to home.html
+                        window.location.href = "home.html";
+                    }
                 });
-            } else {
-                hideUserInfo();
             }
-        });
 
-        // Toggle between login and signup forms
-        loginBtn.addEventListener('click', () => {
-            loginBtn.classList.add('active');
-            signupBtn.classList.remove('active');
-            toggleBg.style.left = '5px';
-            loginForm.classList.add('active');
-            signupForm.classList.remove('active');
-            clearMessages();
-            clearFormErrors();
-        });
+            // Toggle between login and signup forms
+            loginBtn.addEventListener('click', () => {
+                loginBtn.classList.add('active');
+                signupBtn.classList.remove('active');
+                toggleBg.style.left = '5px';
+                loginForm.classList.add('active');
+                signupForm.classList.remove('active');
+                clearMessages();
+                clearFormErrors();
+            });
 
-        signupBtn.addEventListener('click', () => {
-            signupBtn.classList.add('active');
-            loginBtn.classList.remove('active');
-            toggleBg.style.left = 'calc(50% + 5px)';
-            signupForm.classList.add('active');
-            loginForm.classList.remove('active');
-            clearMessages();
-            clearFormErrors();
-        });
+            signupBtn.addEventListener('click', () => {
+                signupBtn.classList.add('active');
+                loginBtn.classList.remove('active');
+                toggleBg.style.left = 'calc(50% + 5px)';
+                signupForm.classList.add('active');
+                loginForm.classList.remove('active');
+                clearMessages();
+                clearFormErrors();
+            });
 
-        // Password toggle functionality
-        loginPasswordToggle.addEventListener('click', () => {
-            const type = loginPassword.getAttribute('type') === 'password' ? 'text' : 'password';
-            loginPassword.setAttribute('type', type);
-            loginPasswordToggle.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
-        });
+            // Password toggle functionality
+            loginPasswordToggle.addEventListener('click', () => {
+                const type = loginPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+                loginPassword.setAttribute('type', type);
+                loginPasswordToggle.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+            });
 
-        signupPasswordToggle.addEventListener('click', () => {
-            const type = signupPassword.getAttribute('type') === 'password' ? 'text' : 'password';
-            signupPassword.setAttribute('type', type);
-            signupPasswordToggle.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
-        });
+            signupPasswordToggle.addEventListener('click', () => {
+                const type = signupPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+                signupPassword.setAttribute('type', type);
+                signupPasswordToggle.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+            });
 
-        // Form validation
-        function validateEmail(email) {
-            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return re.test(email);
-        }
-
-        function validatePassword(password) {
-            return password.length >= 8;
-        }
-
-        function validatePhone(phone) {
-            const re = /^\d{10}$/;
-            return re.test(phone);
-        }
-
-        // Show input error
-        function showInputError(input, errorElement, message) {
-            input.classList.add('input-error');
-            errorElement.textContent = message;
-            errorElement.style.display = 'block';
-        }
-
-        // Hide input error
-        function hideInputError(input, errorElement) {
-            input.classList.remove('input-error');
-            errorElement.style.display = 'none';
-        }
-
-        // Clear all form errors
-        function clearFormErrors() {
-            const inputs = document.querySelectorAll('input');
-            inputs.forEach(input => input.classList.remove('input-error'));
-            
-            const errors = document.querySelectorAll('.error-text');
-            errors.forEach(error => error.style.display = 'none');
-        }
-
-        // Login form submission
-        loginForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            clearFormErrors();
-            
-            let isValid = true;
-            
-            // Validate email
-            if (!loginEmail.value) {
-                showInputError(loginEmail, loginEmailError, 'Email is required');
-                isValid = false;
-            } else if (!validateEmail(loginEmail.value)) {
-                showInputError(loginEmail, loginEmailError, 'Please enter a valid email address');
-                isValid = false;
+            // Form validation
+            function validateEmail(email) {
+                const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return re.test(email);
             }
-            
-            // Validate password
-            if (!loginPassword.value) {
-                showInputError(loginPassword, loginPasswordError, 'Password is required');
-                isValid = false;
+
+            function validatePassword(password) {
+                return password.length >= 8;
             }
-            
-            if (isValid) {
-                const submitBtn = loginForm.querySelector('.continue-btn');
-                const originalText = submitBtn.textContent;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
-                submitBtn.disabled = true;
+
+            function validatePhone(phone) {
+                const re = /^\d{10}$/;
+                return re.test(phone);
+            }
+
+            // Show input error
+            function showInputError(input, errorElement, message) {
+                input.classList.add('input-error');
+                errorElement.textContent = message;
+                errorElement.style.display = 'block';
+            }
+
+            // Hide input error
+            function hideInputError(input, errorElement) {
+                input.classList.remove('input-error');
+                errorElement.style.display = 'none';
+            }
+
+            // Clear all form errors
+            function clearFormErrors() {
+                const inputs = document.querySelectorAll('input');
+                inputs.forEach(input => input.classList.remove('input-error'));
                 
-                // Firebase email login
-                auth.signInWithEmailAndPassword(loginEmail.value, loginPassword.value)
-                    .then((userCredential) => {
-                        const user = userCredential.user;
-                        showSuccess('Login successful! Welcome back.');
-                        submitBtn.innerHTML = originalText;
-                        submitBtn.disabled = false;
-                        
-                        // Log analytics event
-                        analytics.logEvent('email_login_success');
-                    })
-                    .catch((error) => {
-                        let errorMessage = 'Login failed. Please try again.';
-                        
-                        if (error.code === 'auth/user-not-found') {
-                            errorMessage = 'No account found with this email. Please sign up first.';
-                        } else if (error.code === 'auth/wrong-password') {
-                            errorMessage = 'Incorrect password. Please try again.';
-                        } else if (error.code === 'auth/invalid-email') {
-                            errorMessage = 'Invalid email address.';
-                        }
-                        
-                        showError(errorMessage);
-                        submitBtn.innerHTML = originalText;
-                        submitBtn.disabled = false;
-                        
-                        // Log analytics event
-                        analytics.logEvent('email_login_failed', {
-                            error_code: error.code
-                        });
-                    });
+                const errors = document.querySelectorAll('.error-text');
+                errors.forEach(error => error.style.display = 'none');
             }
-        });
 
-        // Signup form submission
-        signupForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            clearFormErrors();
-            
-            let isValid = true;
-            
-            // Validate name
-            if (!signupName.value.trim()) {
-                showInputError(signupName, signupNameError, 'Full name is required');
-                isValid = false;
-            }
-            
-            // Validate email
-            if (!signupEmail.value) {
-                showInputError(signupEmail, signupEmailError, 'Email is required');
-                isValid = false;
-            } else if (!validateEmail(signupEmail.value)) {
-                showInputError(signupEmail, signupEmailError, 'Please enter a valid email address');
-                isValid = false;
-            }
-            
-            // Validate password
-            if (!signupPassword.value) {
-                showInputError(signupPassword, signupPasswordError, 'Password is required');
-                isValid = false;
-            } else if (!validatePassword(signupPassword.value)) {
-                showInputError(signupPassword, signupPasswordError, 'Password must be at least 8 characters');
-                isValid = false;
-            }
-            
-            // Validate confirm password
-            if (!signupConfirmPassword.value) {
-                showInputError(signupConfirmPassword, signupConfirmPasswordError, 'Please confirm your password');
-                isValid = false;
-            } else if (signupPassword.value !== signupConfirmPassword.value) {
-                showInputError(signupConfirmPassword, signupConfirmPasswordError, 'Passwords do not match');
-                isValid = false;
-            }
-            
-            if (isValid) {
-                const submitBtn = signupForm.querySelector('.continue-btn');
-                const originalText = submitBtn.textContent;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating account...';
-                submitBtn.disabled = true;
+            // Login form submission
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                clearFormErrors();
                 
-                // Firebase email signup
-                auth.createUserWithEmailAndPassword(signupEmail.value, signupPassword.value)
-                    .then((userCredential) => {
-                        const user = userCredential.user;
-                        
-                        // Update user profile with name
-                        return user.updateProfile({
-                            displayName: signupName.value.trim()
-                        }).then(() => {
-                            showSuccess('Account created successfully! Welcome to Nester AI.');
+                let isValid = true;
+                
+                // Validate email
+                if (!loginEmail.value) {
+                    showInputError(loginEmail, loginEmailError, 'Email is required');
+                    isValid = false;
+                } else if (!validateEmail(loginEmail.value)) {
+                    showInputError(loginEmail, loginEmailError, 'Please enter a valid email address');
+                    isValid = false;
+                }
+                
+                // Validate password
+                if (!loginPassword.value) {
+                    showInputError(loginPassword, loginPasswordError, 'Password is required');
+                    isValid = false;
+                }
+                
+                if (isValid && window.firebaseAuthMethods) {
+                    const submitBtn = loginForm.querySelector('.continue-btn');
+                    const originalText = submitBtn.textContent;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+                    submitBtn.disabled = true;
+                    
+                    // Firebase email login
+                    window.firebaseAuthMethods.signInWithEmailAndPassword(window.firebaseAuth, loginEmail.value, loginPassword.value)
+                        .then((userCredential) => {
+                            const user = userCredential.user;
+                            showSuccess('Login successful! Redirecting...');
+                            
+                            // Redirect to home.html after successful login
+                            setTimeout(() => {
+                                window.location.href = "home.html";
+                            }, 1500);
+                        })
+                        .catch((error) => {
+                            let errorMessage = 'Login failed. Please try again.';
+                            
+                            if (error.code === 'auth/user-not-found') {
+                                errorMessage = 'No account found with this email. Please sign up first.';
+                            } else if (error.code === 'auth/wrong-password') {
+                                errorMessage = 'Incorrect password. Please try again.';
+                            } else if (error.code === 'auth/invalid-email') {
+                                errorMessage = 'Invalid email address.';
+                            }
+                            
+                            showError(errorMessage);
                             submitBtn.innerHTML = originalText;
                             submitBtn.disabled = false;
-                            
-                            // Reset form
-                            signupForm.reset();
-                            
-                            // Log analytics event
-                            analytics.logEvent('email_signup_success');
                         });
+                }
+            });
+
+            // Signup form submission
+            signupForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                clearFormErrors();
+                
+                let isValid = true;
+                
+                // Validate name
+                if (!signupName.value.trim()) {
+                    showInputError(signupName, signupNameError, 'Full name is required');
+                    isValid = false;
+                }
+                
+                // Validate email
+                if (!signupEmail.value) {
+                    showInputError(signupEmail, signupEmailError, 'Email is required');
+                    isValid = false;
+                } else if (!validateEmail(signupEmail.value)) {
+                    showInputError(signupEmail, signupEmailError, 'Please enter a valid email address');
+                    isValid = false;
+                }
+                
+                // Validate password
+                if (!signupPassword.value) {
+                    showInputError(signupPassword, signupPasswordError, 'Password is required');
+                    isValid = false;
+                } else if (!validatePassword(signupPassword.value)) {
+                    showInputError(signupPassword, signupPasswordError, 'Password must be at least 8 characters');
+                    isValid = false;
+                }
+                
+                // Validate confirm password
+                if (!signupConfirmPassword.value) {
+                    showInputError(signupConfirmPassword, signupConfirmPasswordError, 'Please confirm your password');
+                    isValid = false;
+                } else if (signupPassword.value !== signupConfirmPassword.value) {
+                    showInputError(signupConfirmPassword, signupConfirmPasswordError, 'Passwords do not match');
+                    isValid = false;
+                }
+                
+                if (isValid && window.firebaseAuthMethods) {
+                    const submitBtn = signupForm.querySelector('.continue-btn');
+                    const originalText = submitBtn.textContent;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating account...';
+                    submitBtn.disabled = true;
+                    
+                    // Firebase email signup
+                    window.firebaseAuthMethods.createUserWithEmailAndPassword(window.firebaseAuth, signupEmail.value, signupPassword.value)
+                        .then((userCredential) => {
+                            const user = userCredential.user;
+                            
+                            // Update user profile with name
+                            return window.firebaseAuthMethods.updateProfile(user, {
+                                displayName: signupName.value.trim()
+                            }).then(() => {
+                                showSuccess('Account created successfully! Redirecting...');
+                                
+                                // Redirect to home.html after successful signup
+                                setTimeout(() => {
+                                    window.location.href = "home.html";
+                                }, 1500);
+                            });
+                        })
+                        .catch((error) => {
+                            let errorMessage = 'Sign up failed. Please try again.';
+                            
+                            if (error.code === 'auth/email-already-in-use') {
+                                errorMessage = 'Email already registered. Please log in instead.';
+                            } else if (error.code === 'auth/weak-password') {
+                                errorMessage = 'Password is too weak. Please use a stronger password.';
+                            } else if (error.code === 'auth/invalid-email') {
+                                errorMessage = 'Invalid email address.';
+                            }
+                            
+                            showError(errorMessage);
+                            submitBtn.innerHTML = originalText;
+                            submitBtn.disabled = false;
+                        });
+                }
+            });
+
+            // Google Authentication
+            googleLogin.addEventListener('click', () => {
+                loginWithGoogle(googleLogin);
+            });
+
+            googleSignup.addEventListener('click', () => {
+                loginWithGoogle(googleSignup);
+            });
+
+            function loginWithGoogle(button) {
+                if (!window.firebaseAuthMethods) {
+                    showError('Firebase not loaded yet. Please try again.');
+                    return;
+                }
+                
+                const provider = new window.firebaseAuthMethods.GoogleAuthProvider();
+                
+                const loadingIcon = button.querySelector('.loading');
+                loadingIcon.style.display = 'inline-block';
+                button.disabled = true;
+                
+                window.firebaseAuthMethods.signInWithPopup(window.firebaseAuth, provider)
+                    .then((result) => {
+                        const user = result.user;
+                        showSuccess('Google authentication successful! Redirecting...');
+                        
+                        // Redirect to home.html after successful login
+                        setTimeout(() => {
+                            window.location.href = "home.html";
+                        }, 1500);
                     })
                     .catch((error) => {
-                        let errorMessage = 'Sign up failed. Please try again.';
+                        let errorMessage = 'Google authentication failed. Please try again.';
                         
-                        if (error.code === 'auth/email-already-in-use') {
-                            errorMessage = 'Email already registered. Please log in instead.';
-                        } else if (error.code === 'auth/weak-password') {
-                            errorMessage = 'Password is too weak. Please use a stronger password.';
-                        } else if (error.code === 'auth/invalid-email') {
-                            errorMessage = 'Invalid email address.';
+                        if (error.code === 'auth/unauthorized-domain') {
+                            errorMessage = 'Domain not authorized. Please add your domain to Firebase authorized domains.';
+                        } else if (error.code === 'auth/popup-closed-by-user') {
+                            errorMessage = 'Authentication cancelled.';
                         }
                         
                         showError(errorMessage);
-                        submitBtn.innerHTML = originalText;
-                        submitBtn.disabled = false;
-                        
-                        // Log analytics event
-                        analytics.logEvent('email_signup_failed', {
-                            error_code: error.code
-                        });
+                        loadingIcon.style.display = 'none';
+                        button.disabled = false;
                     });
             }
-        });
 
-        // Google Authentication
-        googleLogin.addEventListener('click', () => {
-            loginWithGoogle(googleLogin);
-        });
+            // Apple Authentication (Simulated - would require proper configuration)
+            appleLogin.addEventListener('click', () => {
+                simulateAppleLogin(appleLogin);
+            });
 
-        googleSignup.addEventListener('click', () => {
-            loginWithGoogle(googleSignup);
-        });
+            appleSignup.addEventListener('click', () => {
+                simulateAppleLogin(appleSignup);
+            });
 
-        function loginWithGoogle(button) {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            
-            const loadingIcon = button.querySelector('.loading');
-            loadingIcon.style.display = 'inline-block';
-            button.disabled = true;
-            
-            auth.signInWithPopup(provider)
-                .then((result) => {
-                    const user = result.user;
-                    showSuccess('Google authentication successful!');
-                    
-                    // Log analytics event
-                    analytics.logEvent('google_login_success');
-                })
-                .catch((error) => {
-                    let errorMessage = 'Google authentication failed. Please try again.';
-                    
-                    if (error.code === 'auth/unauthorized-domain') {
-                        errorMessage = 'Domain not authorized. Please add your domain to Firebase authorized domains.';
-                    } else if (error.code === 'auth/popup-closed-by-user') {
-                        errorMessage = 'Authentication cancelled.';
-                    }
-                    
-                    showError(errorMessage);
+            function simulateAppleLogin(button) {
+                const loadingIcon = button.querySelector('.loading');
+                loadingIcon.style.display = 'inline-block';
+                button.disabled = true;
+                
+                setTimeout(() => {
+                    showError('Apple Sign In requires additional configuration in Firebase.');
                     loadingIcon.style.display = 'none';
                     button.disabled = false;
-                    
-                    // Log analytics event
-                    analytics.logEvent('google_login_failed', {
-                        error_code: error.code
-                    });
-                });
-        }
-
-        // Apple Authentication (Simulated - would require proper configuration)
-        appleLogin.addEventListener('click', () => {
-            simulateAppleLogin(appleLogin);
-        });
-
-        appleSignup.addEventListener('click', () => {
-            simulateAppleLogin(appleSignup);
-        });
-
-        function simulateAppleLogin(button) {
-            const loadingIcon = button.querySelector('.loading');
-            loadingIcon.style.display = 'inline-block';
-            button.disabled = true;
-            
-            setTimeout(() => {
-                showError('Apple Sign In requires additional configuration in Firebase.');
-                loadingIcon.style.display = 'none';
-                button.disabled = false;
-            }, 2000);
-        }
-
-        // Phone authentication
-        phoneLogin.addEventListener('click', () => {
-            showPhoneModal();
-        });
-
-        phoneSignup.addEventListener('click', () => {
-            showPhoneModal();
-        });
-
-        function showPhoneModal() {
-            phoneModal.style.display = 'flex';
-            phoneError.style.display = 'none';
-            phoneNumber.value = '';
-        }
-
-        closeModal.addEventListener('click', () => {
-            phoneModal.style.display = 'none';
-        });
-
-        sendVerification.addEventListener('click', () => {
-            const fullPhoneNumber = countryCode.value + phoneNumber.value;
-            
-            if (!phoneNumber.value) {
-                phoneError.textContent = 'Please enter your phone number';
-                phoneError.style.display = 'block';
-                return;
+                }, 2000);
             }
-            
-            if (!validatePhone(phoneNumber.value)) {
-                phoneError.textContent = 'Please enter a valid 10-digit phone number';
-                phoneError.style.display = 'block';
-                return;
-            }
-            
-            // Configure reCAPTCHA verifier
-            const appVerifier = new firebase.auth.RecaptchaVerifier('sendVerification', {
-                size: 'invisible'
+
+            // Phone authentication
+            phoneLogin.addEventListener('click', () => {
+                showPhoneModal();
             });
-            
-            const loadingIcon = sendVerification.querySelector('.loading');
-            if (!loadingIcon) {
-                sendVerification.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
-            } else {
-                loadingIcon.style.display = 'inline-block';
+
+            phoneSignup.addEventListener('click', () => {
+                showPhoneModal();
+            });
+
+            function showPhoneModal() {
+                phoneModal.style.display = 'flex';
+                phoneError.style.display = 'none';
+                phoneNumber.value = '';
             }
-            sendVerification.disabled = true;
-            
-            // Send verification code
-            auth.signInWithPhoneNumber(fullPhoneNumber, appVerifier)
-                .then((result) => {
-                    confirmationResult = result;
+
+            closeModal.addEventListener('click', () => {
+                phoneModal.style.display = 'none';
+            });
+
+            sendVerification.addEventListener('click', () => {
+                const fullPhoneNumber = countryCode.value + phoneNumber.value;
+                
+                if (!phoneNumber.value) {
+                    phoneError.textContent = 'Please enter your phone number';
+                    phoneError.style.display = 'block';
+                    return;
+                }
+                
+                if (!validatePhone(phoneNumber.value)) {
+                    phoneError.textContent = 'Please enter a valid 10-digit phone number';
+                    phoneError.style.display = 'block';
+                    return;
+                }
+                
+                const loadingIcon = sendVerification.querySelector('.loading');
+                if (!loadingIcon) {
+                    sendVerification.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+                } else {
+                    loadingIcon.style.display = 'inline-block';
+                }
+                sendVerification.disabled = true;
+                
+                // Simulate sending verification code
+                setTimeout(() => {
+                    confirmationResult = { confirm: () => Promise.resolve({ user: {} }) }; // Mock confirmation result
                     phoneModal.style.display = 'none';
                     verificationModal.style.display = 'flex';
                     showSuccess(`Verification code sent to ${fullPhoneNumber}`);
                     
-                    // Log analytics event
-                    analytics.logEvent('phone_verification_sent');
-                })
-                .catch((error) => {
-                    let errorMessage = 'Error sending verification code. Please try again.';
-                    
-                    if (error.code === 'auth/invalid-phone-number') {
-                        errorMessage = 'Invalid phone number format.';
-                    } else if (error.code === 'auth/quota-exceeded') {
-                        errorMessage = 'Quota exceeded. Please try again later.';
-                    }
-                    
-                    showError(errorMessage);
                     sendVerification.disabled = false;
                     sendVerification.innerHTML = 'Send Verification Code';
-                    
-                    // Log analytics event
-                    analytics.logEvent('phone_verification_failed', {
-                        error_code: error.code
-                    });
-                });
-        });
+                }, 2000);
+            });
 
-        // Verify phone code
-        closeVerificationModal.addEventListener('click', () => {
-            verificationModal.style.display = 'none';
-        });
+            // Verify phone code
+            closeVerificationModal.addEventListener('click', () => {
+                verificationModal.style.display = 'none';
+            });
 
-        verifyCode.addEventListener('click', () => {
-            const code = verificationCode.value;
-            
-            if (!code) {
-                verificationError.textContent = 'Please enter the verification code';
-                verificationError.style.display = 'block';
-                return;
-            }
-            
-            verifyCode.disabled = true;
-            verifyCode.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
-            
-            confirmationResult.confirm(code)
-                .then((result) => {
-                    const user = result.user;
-                    verificationModal.style.display = 'none';
-                    showSuccess('Phone verification successful!');
-                    
-                    // Log analytics event
-                    analytics.logEvent('phone_verification_success');
-                })
-                .catch((error) => {
-                    let errorMessage = 'Invalid verification code. Please try again.';
-                    
-                    if (error.code === 'auth/invalid-verification-code') {
-                        errorMessage = 'Invalid code. Please check and try again.';
-                    }
-                    
-                    verificationError.textContent = errorMessage;
+            verifyCode.addEventListener('click', () => {
+                const code = verificationCode.value;
+                
+                if (!code) {
+                    verificationError.textContent = 'Please enter the verification code';
                     verificationError.style.display = 'block';
+                    return;
+                }
+                
+                verifyCode.disabled = true;
+                verifyCode.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+                
+                // Simulate verification
+                setTimeout(() => {
+                    verificationModal.style.display = 'none';
+                    showSuccess('Phone verification successful! Redirecting...');
+                    
+                    // Redirect to home.html after successful phone verification
+                    setTimeout(() => {
+                        window.location.href = "home.html";
+                    }, 1500);
+                    
                     verifyCode.disabled = false;
                     verifyCode.innerHTML = 'Verify Code';
-                    
-                    // Log analytics event
-                    analytics.logEvent('phone_verification_failed', {
-                        error_code: error.code
-                    });
-                });
-        });
+                }, 2000);
+            });
 
-        // Forgot Password
-        forgotPassword.addEventListener('click', (e) => {
-            e.preventDefault();
-            const email = loginEmail.value;
-            
-            if (!email) {
-                showError('Please enter your email address first.');
-                return;
+            // Forgot Password
+            forgotPassword.addEventListener('click', (e) => {
+                e.preventDefault();
+                const email = loginEmail.value;
+                
+                if (!email) {
+                    showError('Please enter your email address first.');
+                    return;
+                }
+                
+                if (!validateEmail(email)) {
+                    showError('Please enter a valid email address.');
+                    return;
+                }
+                
+                if (window.firebaseAuthMethods) {
+                    window.firebaseAuthMethods.sendPasswordResetEmail(window.firebaseAuth, email)
+                        .then(() => {
+                            showSuccess('Password reset email sent! Check your inbox.');
+                        })
+                        .catch((error) => {
+                            let errorMessage = 'Error sending reset email. Please try again.';
+                            
+                            if (error.code === 'auth/user-not-found') {
+                                errorMessage = 'No account found with this email address.';
+                            }
+                            
+                            showError(errorMessage);
+                        });
+                }
+            });
+
+            // Terms and Privacy
+            termsLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                showSuccess('Terms of Service would be displayed here!');
+            });
+
+            privacyLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                showSuccess('Privacy Policy would be displayed here!');
+            });
+
+            // Logout
+            logoutBtn.addEventListener('click', () => {
+                if (window.firebaseAuthMethods) {
+                    window.firebaseAuthMethods.signOut(window.firebaseAuth)
+                        .then(() => {
+                            showSuccess('You have been logged out successfully.');
+                            hideUserInfo();
+                        })
+                        .catch((error) => {
+                            showError(error.message);
+                        });
+                }
+            });
+
+            // Show user info
+            function showUserInfo(user) {
+                userInfo.style.display = 'block';
+                loginForm.style.display = 'none';
+                signupForm.style.display = 'none';
+                
+                if (user.photoURL) {
+                    userPhoto.src = user.photoURL;
+                    userPhoto.style.display = 'block';
+                } else {
+                    // Generate a placeholder avatar based on name or email
+                    const name = user.displayName || user.email.split('@')[0] || 'User';
+                    const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
+                    userPhoto.src = `https://ui-avatars.com/api/?name=${initials}&background=ff8a00&color=fff&size=60`;
+                    userPhoto.style.display = 'block';
+                }
+                
+                userName.textContent = `Welcome, ${user.displayName || 'User'}!`;
+                userEmail.textContent = user.email || user.phoneNumber || '';
             }
-            
-            if (!validateEmail(email)) {
-                showError('Please enter a valid email address.');
-                return;
+
+            function hideUserInfo() {
+                userInfo.style.display = 'none';
+                loginForm.style.display = 'block';
+                loginForm.reset();
+                signupForm.reset();
+                clearFormErrors();
             }
-            
-            auth.sendPasswordResetEmail(email)
-                .then(() => {
-                    showSuccess('Password reset email sent! Check your inbox.');
-                    
-                    // Log analytics event
-                    analytics.logEvent('password_reset_requested');
-                })
-                .catch((error) => {
-                    let errorMessage = 'Error sending reset email. Please try again.';
-                    
-                    if (error.code === 'auth/user-not-found') {
-                        errorMessage = 'No account found with this email address.';
-                    }
-                    
-                    showError(errorMessage);
-                    
-                    // Log analytics event
-                    analytics.logEvent('password_reset_failed', {
-                        error_code: error.code
-                    });
-                });
-        });
 
-        // Terms and Privacy
-        termsLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            showSuccess('Terms of Service would be displayed here!');
-        });
-
-        privacyLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            showSuccess('Privacy Policy would be displayed here!');
-        });
-
-        // Logout
-        logoutBtn.addEventListener('click', () => {
-            auth.signOut()
-                .then(() => {
-                    showSuccess('You have been logged out successfully.');
-                    hideUserInfo();
-                    
-                    // Log analytics event
-                    analytics.logEvent('user_logout');
-                })
-                .catch((error) => {
-                    showError(error.message);
-                });
-        });
-
-        // Show user info
-        function showUserInfo(user) {
-            userInfo.style.display = 'block';
-            loginForm.style.display = 'none';
-            signupForm.style.display = 'none';
-            
-            if (user.photoURL) {
-                userPhoto.src = user.photoURL;
-                userPhoto.style.display = 'block';
-            } else {
-                // Generate a placeholder avatar based on name or email
-                const name = user.displayName || user.email.split('@')[0];
-                const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
-                userPhoto.src = `https://ui-avatars.com/api/?name=${initials}&background=ff8a00&color=fff&size=60`;
-                userPhoto.style.display = 'block';
-            }
-            
-            userName.textContent = `Welcome, ${user.displayName || 'User'}!`;
-            userEmail.textContent = user.email || user.phoneNumber || '';
-        }
-
-        function hideUserInfo() {
-            userInfo.style.display = 'none';
-            loginForm.style.display = 'block';
-            loginForm.reset();
-            signupForm.reset();
-            clearFormErrors();
-        }
-
-        // Show success message
-        function showSuccess(message) {
-            successMessage.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
-            successMessage.style.display = 'block';
-            errorMessage.style.display = 'none';
-            
-            setTimeout(() => {
-                successMessage.style.display = 'none';
-            }, 5000);
-        }
-
-        // Show error message
-        function showError(message) {
-            errorMessage.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
-            errorMessage.style.display = 'block';
-            successMessage.style.display = 'none';
-            
-            setTimeout(() => {
+            // Show success message
+            function showSuccess(message) {
+                successMessage.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+                successMessage.style.display = 'block';
                 errorMessage.style.display = 'none';
-            }, 5000);
-        }
-
-        // Clear messages
-        function clearMessages() {
-            successMessage.style.display = 'none';
-            errorMessage.style.display = 'none';
-        }
-
-        // Real-time validation
-        loginEmail.addEventListener('input', () => {
-            if (loginEmail.value && !validateEmail(loginEmail.value)) {
-                showInputError(loginEmail, loginEmailError, 'Please enter a valid email address');
-            } else {
-                hideInputError(loginEmail, loginEmailError);
+                
+                setTimeout(() => {
+                    successMessage.style.display = 'none';
+                }, 5000);
             }
-        });
 
-        signupEmail.addEventListener('input', () => {
-            if (signupEmail.value && !validateEmail(signupEmail.value)) {
-                showInputError(signupEmail, signupEmailError, 'Please enter a valid email address');
-            } else {
-                hideInputError(signupEmail, signupEmailError);
+            // Show error message
+            function showError(message) {
+                errorMessage.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+                errorMessage.style.display = 'block';
+                successMessage.style.display = 'none';
+                
+                setTimeout(() => {
+                    errorMessage.style.display = 'none';
+                }, 5000);
             }
-        });
 
-        signupPassword.addEventListener('input', () => {
-            if (signupPassword.value && !validatePassword(signupPassword.value)) {
-                showInputError(signupPassword, signupPasswordError, 'Password must be at least 8 characters');
-            } else {
-                hideInputError(signupPassword, signupPasswordError);
+            // Clear messages
+            function clearMessages() {
+                successMessage.style.display = 'none';
+                errorMessage.style.display = 'none';
             }
-            
-            // Update confirm password validation
-            if (signupConfirmPassword.value && signupPassword.value !== signupConfirmPassword.value) {
-                showInputError(signupConfirmPassword, signupConfirmPasswordError, 'Passwords do not match');
-            } else {
-                hideInputError(signupConfirmPassword, signupConfirmPasswordError);
-            }
-        });
 
-        signupConfirmPassword.addEventListener('input', () => {
-            if (signupConfirmPassword.value && signupPassword.value !== signupConfirmPassword.value) {
-                showInputError(signupConfirmPassword, signupConfirmPasswordError, 'Passwords do not match');
-            } else {
-                hideInputError(signupConfirmPassword, signupConfirmPasswordError);
-            }
-        });
+            // Real-time validation
+            loginEmail.addEventListener('input', () => {
+                if (loginEmail.value && !validateEmail(loginEmail.value)) {
+                    showInputError(loginEmail, loginEmailError, 'Please enter a valid email address');
+                } else {
+                    hideInputError(loginEmail, loginEmailError);
+                }
+            });
 
-        // Initialize the page
-        document.addEventListener('DOMContentLoaded', () => {
+            signupEmail.addEventListener('input', () => {
+                if (signupEmail.value && !validateEmail(signupEmail.value)) {
+                    showInputError(signupEmail, signupEmailError, 'Please enter a valid email address');
+                } else {
+                    hideInputError(signupEmail, signupEmailError);
+                }
+            });
+
+            signupPassword.addEventListener('input', () => {
+                if (signupPassword.value && !validatePassword(signupPassword.value)) {
+                    showInputError(signupPassword, signupPasswordError, 'Password must be at least 8 characters');
+                } else {
+                    hideInputError(signupPassword, signupPasswordError);
+                }
+                
+                // Update confirm password validation
+                if (signupConfirmPassword.value && signupPassword.value !== signupConfirmPassword.value) {
+                    showInputError(signupConfirmPassword, signupConfirmPasswordError, 'Passwords do not match');
+                } else {
+                    hideInputError(signupConfirmPassword, signupConfirmPasswordError);
+                }
+            });
+
+            signupConfirmPassword.addEventListener('input', () => {
+                if (signupConfirmPassword.value && signupPassword.value !== signupConfirmPassword.value) {
+                    showInputError(signupConfirmPassword, signupConfirmPasswordError, 'Passwords do not match');
+                } else {
+                    hideInputError(signupConfirmPassword, signupConfirmPasswordError);
+                }
+            });
+
+            // Initialize the page
             console.log('Nester AI Authentication Page Loaded');
             // Set Indian phone number as default
             countryCode.value = '+91';
